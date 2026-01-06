@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VisionLab: Image Processing Suite</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#070A14;
+      --stroke: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --shadow: 0 30px 90px rgba(0,0,0,.6);
+      --r: 22px;
+
+      --a1:#7c5cff;
+      --a2:#00d4ff;
+      --a3:#36d399;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family: Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 650px at 15% 15%, rgba(124,92,255,.22), transparent 60%),
+        radial-gradient(900px 550px at 85% 18%, rgba(0,212,255,.16), transparent 55%),
+        radial-gradient(1000px 650px at 50% 120%, rgba(54,211,153,.10), transparent 60%),
+        var(--bg);
+      min-height:100vh;
+      overflow-x:hidden;
+
+      /* footer bottom */
+      display:flex;
+      flex-direction:column;
+    }
+
+    .stars{
+      position:fixed; inset:0;
+      background-image: radial-gradient(rgba(255,255,255,.16) 1px, transparent 1px);
+      background-size: 120px 120px;
+      opacity:.12;
+      pointer-events:none;
+      mask-image: radial-gradient(circle at 40% 20%, black 0%, transparent 65%);
+    }
+
+    .wrap{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 16px 20px;
+      position:relative;
+      z-index:1;
+
+      /* footer bottom */
+      flex:1;
+      width:100%;
+    }
+
+    header{
+      text-align:center;
+      padding: 18px 10px 10px;
+    }
+
+    h1{
+      margin: 0;
+      font-size: clamp(30px, 3.6vw, 56px);
+      letter-spacing:.2px;
+      line-height:1.05;
+      font-weight: 800;
+      color: rgba(255,255,255,.96);
+    }
+
+    .grid{
+      margin-top: 30px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* ===== Flip Card ===== */
+    .flipWrap{
+      perspective: 1200px;
+      cursor:pointer;
+      transform: translateY(12px);
+      opacity: 0;
+      animation: rise .65s ease forwards;
+    }
+    .flipWrap:nth-child(2){ animation-delay: .10s; }
+
+    @keyframes rise{
+      to{ transform: translateY(0); opacity: 1; }
+    }
+
+    .flipCard{
+      width:100%;
+      height: 260px;
+      position:relative;
+      transform-style: preserve-3d;
+      transition: transform .7s cubic-bezier(.2,.8,.2,1);
+      border-radius: var(--r);
+    }
+
+    .flipWrap:hover .flipCard{
+      transform: rotateY(180deg);
+    }
+
+    .face{
+      position:absolute;
+      inset:0;
+      border-radius: var(--r);
+      backface-visibility: hidden;
+      overflow:hidden;
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      background: rgba(255,255,255,.05);
+    }
+
+    .face::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(700px 320px at 20% 0%, rgba(124,92,255,.18), transparent 55%),
+        radial-gradient(700px 320px at 90% 20%, rgba(0,212,255,.12), transparent 55%);
+      opacity:.85;
+      pointer-events:none;
+    }
+
+    .frontContent, .backContent{
+      position:relative;
+      height:100%;
+      padding: 18px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:14px;
+    }
+
+    .topRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .titleBlock strong{
+      display:block;
+      font-size: 18px;
+      letter-spacing:.2px;
+      line-height:1.25;
+    }
+    .titleBlock span{
+      display:block;
+      margin-top:6px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height:1.55;
+      max-width: 52ch;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.82);
+      font-size: 12px;
+      user-select:none;
+      flex:0 0 auto;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background: linear-gradient(45deg, var(--a3), var(--a2));
+      box-shadow: 0 0 0 4px rgba(54,211,153,.12);
+    }
+
+    .cta{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.10);
+    }
+
+    .hint{
+      font-size: 12.5px;
+      color: rgba(255,255,255,.72);
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 13px;
+      color: white;
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(0,212,255,.85));
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      transition: transform .15s ease, filter .15s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      white-space:nowrap;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+    .btn:active{ transform: translateY(0); filter: brightness(.98); }
+
+    /* Back face */
+    .back{
+      transform: rotateY(180deg);
+      background: rgba(255,255,255,.06);
+    }
+
+    .backContent .big{
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      line-height:1.2;
+    }
+    .backContent .small{
+      font-size: 13px;
+      color: var(--muted);
+      line-height:1.6;
+    }
+
+    /* Footer pinned bottom */
+    footer{
+      margin-top:auto;
+      padding: 18px 0 18px;
+      text-align:center;
+      color: rgba(255,255,255,.55);
+      font-size: 12.5px;
+      line-height:1.6;
+
+      /* subtle glass bar */
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(7,10,20,.35);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      .flipWrap:hover .flipCard{ transform:none; }
+      .flipCard{ transition:none; }
+      .flipWrap{ animation:none; opacity:1; transform:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="stars"></div>
+
+  <div class="wrap">
+    <header>
+      <h1>VisionLab: Image Processing Suite</h1>
+    </header>
+
+    <section class="grid">
+
+      <!-- Flip Card 1 -->
+      <div class="flipWrap" onclick="go('https://amithasan16hstu.github.io/CGIP/')">
+        <div class="flipCard">
+          <!-- Front -->
+          <div class="face front">
+            <div class="frontContent">
+              <div class="topRow">
+                <div class="titleBlock">
+                  <strong>Adaptive Histogram Equalization with CLAHE</strong>
+                  <span>Enhance contrast and compare before/after using a slider.</span>
+                </div>
+                <div class="badge"><span class="dot"></span> Project 1</div>
+              </div>
+
+              <div class="cta">
+                <div class="hint">Hover to flip • Click to open</div>
+                <span class="btn">Open Project 1 →</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Back -->
+          <div class="face back">
+            <div class="backContent">
+              <div>
+                <div class="big">CLAHE / AHE Demo</div>
+                <div class="small">
+                  Upload an image, tune parameters, and view the enhanced output instantly.
+                  Fully client-side.
+                </div>
+              </div>
+              <div class="cta">
+                <div class="hint">Click to launch demo</div>
+                <span class="btn">Launch →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flip Card 2 -->
+      <div class="flipWrap" onclick="go('https://amithasan16hstu.github.io/CGIP2/')">
+        <div class="flipCard">
+          <!-- Front -->
+          <div class="face front">
+            <div class="frontContent">
+              <div class="topRow">
+                <div class="titleBlock">
+                  <strong>Image Segmentation</strong>
+                  <span>Region Growing + Split–Merge segmentation with tuning controls.</span>
+                </div>
+                <div class="badge"><span class="dot"></span> Project 2</div>
+              </div>
+
+              <div class="cta">
+                <div class="hint">Hover to flip • Click to open</div>
+                <span class="btn">Open Project 2 →</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Back -->
+          <div class="face back">
+            <div class="backContent">
+              <div>
+                <div class="big">Region Growing + Split–Merge</div>
+                <div class="small">
+                  Upload an image → pick a method → tune thresholds → generate segmented output.
+                </div>
+              </div>
+              <div class="cta">
+                <div class="hint">Click to launch demo</div>
+                <span class="btn">Launch →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer>
+    Hajee Mohammad Danesh Science & Technology University, Dinajpur-5200<br/>
+    © <span id="yr"></span> VisionLab • Amit Hasan Sikder
+  </footer>
+
+  <script>
+    document.getElementById("yr").textContent = new Date().getFullYear();
+    function go(path){ window.location.href = path; }
+  </script>
+</body>
+</html>
